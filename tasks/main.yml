@@ -1,0 +1,62 @@
+---
+
+- name: Edit firewalld for node_exporter port
+  firewalld:
+    port: "{{ node_exporter_publish_port }}/tcp"
+    permanent: true
+    state: enabled
+  notify: restart firewalld
+
+- name: Create prometheus group
+  group:
+    name: prometheus
+    state: present
+
+- name: Create prometheus user
+  user:
+    name: prometheus
+    group: prometheus
+    shell: /sbin/nologin
+    home: "{{ node_exporter_user_home }}"
+    comment: "Prometheus services"
+
+- file:
+    path: /usr/bin/node_exporter
+    state: absent
+
+- name: Get node_exporter
+  get_url:
+    url: https://luxproject.luxoft.com/bamboo/browse/SDO-NOD-8/artifact/JOB1/node-exporter-binary/node_exporter
+    url_username: "{{ bamboo_user }}"
+    url_password: "{{ bamboo_pass }}"
+    force_basic_auth: yes
+    validate_certs: no
+    dest: /usr/bin/node_exporter
+    mode: 0755
+
+- name: Create node_exporter config
+  file:
+    path: /etc/default/node_exporter
+    state: touch
+    mode: 0644
+
+- name: Create node_exporter service
+  copy:
+    src: node_exporter.service
+    dest: /usr/lib/systemd/system/node_exporter.service
+    mode: 0644
+
+- name: "Change owner {{ node_exporter_user_home }}"
+  file:
+    path: "{{ node_exporter_user_home }}"
+    state: directory
+    recurse: yes
+    owner: prometheus
+    group: prometheus
+
+- name: start service node_exporter, in all cases, also issue daemon-reload to pick up config changes
+  systemd:
+    state: started
+    enabled: yes
+    daemon_reload: yes
+    name: node_exporter
