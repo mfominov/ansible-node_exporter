@@ -2,3 +2,9 @@
 
 node_exporter_publish_port: "9100"
 node_exporter_user_home: "/var/lib/prometheus"
+node_exporter_version: "0.15.2"
+node_exporter_arch: "linux-amd64"
+download_url: "https://github.com/prometheus/node_exporter/releases/download/v{{ node_exporter_version }}/node_exporter-{{ node_exporter_version }}.{{ node_exporter_arch }}.tar.gz"
+env: "develop"
+node_exporter_user: "prometheus"
+node_exporter_user_password: "prometheus"

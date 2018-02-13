@@ -1,11 +1,15 @@
 ---
 
-- name: Edit firewalld for node_exporter port
-  firewalld:
-    port: "{{ node_exporter_publish_port }}/tcp"
-    permanent: true
-    state: enabled
-  notify: restart firewalld
+- block:
+
+  - name: Edit firewalld for node_exporter port
+    firewalld:
+      port: "{{ node_exporter_publish_port }}/tcp"
+      permanent: true
+      state: enabled
+    notify: restart firewalld
+
+  when: env == "develop"
 
 - name: Create prometheus group
   group:
@@ -21,18 +25,16 @@
     comment: "Prometheus services"
 
 - file:
-    path: /usr/bin/node_exporter
+    path: /usr/bin/node_exporter-{{ node_exporter_version }}.{{ node_exporter_arch }}
     state: absent
 
 - name: Get node_exporter
-  get_url:
-    url: https://luxproject.luxoft.com/bamboo/browse/SDO-NOD-8/artifact/JOB1/node-exporter-binary/node_exporter
-    url_username: "{{ bamboo_user }}"
-    url_password: "{{ bamboo_pass }}"
-    force_basic_auth: yes
+  unarchive:
+    src: "{{ download_url }}"
     validate_certs: no
-    dest: /usr/bin/node_exporter
-    mode: 0755
+    remote_src: yes
+    dest: /usr/bin/
+#    mode: 0755
 
 - name: Create node_exporter config
   file:
@@ -41,7 +43,7 @@
     mode: 0644
 
 - name: Create node_exporter service
-  copy:
+  template:
     src: node_exporter.service
     dest: /usr/lib/systemd/system/node_exporter.service
     mode: 0644
@@ -60,3 +62,19 @@
     enabled: yes
     daemon_reload: yes
     name: node_exporter
+
+- block:
+
+  - name: Create htpasswd file
+    shell: "htpasswd -b -c /etc/nginx/.htpasswd {{ node_exporter_user }} {{ node_exporter_user_password }}"
+
+  - name: Copy nginx configs
+    copy: 
+      src: "{{ item.src }}"
+      dest: "{{ item.dest }}"
+    with_items:
+      - { src: node_exporter.conf, dest: /etc/nginx/default.d/node_exporter.conf }
+      - { src: node_upstream.conf, dest: /etc/nginx/conf.d/node_upstream.conf }
+    notify: restart nginx
+
+  when: env == "production"
