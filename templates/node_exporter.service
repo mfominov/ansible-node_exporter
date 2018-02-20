@@ -9,9 +9,9 @@ After=network.target
 EnvironmentFile=-/etc/default/node_exporter
 User=prometheus
 {% if env == "develop" %}
-ExecStart=/usr/bin/node_exporter-{{ node_exporter_version }}.{{ node_exporter_arch }}/node_exporter $NODE_EXPORTER_OPTS
+ExecStart={{ node_exporter_directory }}/node_exporter-{{ node_exporter_version }}.{{ node_exporter_arch }}/node_exporter $NODE_EXPORTER_OPTS
 {% elif env == "production" %}
-ExecStart=/usr/bin/node_exporter-{{ node_exporter_version }}.{{ node_exporter_arch }}/node_exporter --web.listen-address=127.0.0.1:9100 --web.telemetry-path "/node/metrics" $NODE_EXPORTER_OPTS
+ExecStart={{ node_exporter_directory }}/node_exporter-{{ node_exporter_version }}.{{ node_exporter_arch }}/node_exporter --web.listen-address=127.0.0.1:9100 --web.telemetry-path "/node/metrics" $NODE_EXPORTER_OPTS
 {% endif %}
 Restart=on-failure
 

@@ -9,7 +9,7 @@
       state: enabled
     notify: restart firewalld
 
-  when: env == "develop"
+  when: env == "develop" and ansible_os_family != "Container Linux by CoreOS"
 
 - name: Create prometheus group
   group:
@@ -24,17 +24,16 @@
     home: "{{ node_exporter_user_home }}"
     comment: "Prometheus services"
 
-- file:
-    path: /usr/bin/node_exporter-{{ node_exporter_version }}.{{ node_exporter_arch }}
-    state: absent
+#- file:
+#    path: "{{ node_exporter_directory }}/node_exporter-{{ node_exporter_version }}.{{ node_exporter_arch }}"
+#    state: absent
 
 - name: Get node_exporter
   unarchive:
     src: "{{ download_url }}"
     validate_certs: no
     remote_src: yes
-    dest: /usr/bin/
-#    mode: 0755
+    dest: "{{ node_exporter_directory }}"
 
 - name: Create node_exporter config
   file:
@@ -56,6 +55,12 @@
     owner: prometheus
     group: prometheus
 
+- name: Add collectors
+  lineinfile:
+    path: /etc/default/node_exporter
+    line: "NODE_EXPORTER_OPTS={{ node_exporter_collectors }}"
+    state: present
+
 - name: start service node_exporter, in all cases, also issue daemon-reload to pick up config changes
   systemd:
     state: started
@@ -64,6 +69,11 @@
     name: node_exporter
 
 - block:
+
+  - name: Install httpd-tools
+    yum:
+      name: httpd-tools
+      state: present
 
   - name: Create htpasswd file
     shell: "htpasswd -b -c /etc/nginx/.htpasswd {{ node_exporter_user }} {{ node_exporter_user_password }}"
