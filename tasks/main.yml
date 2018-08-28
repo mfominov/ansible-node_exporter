@@ -46,6 +46,14 @@
     src: node_exporter.service
     dest: /usr/lib/systemd/system/node_exporter.service
     mode: 0644
+  when: ansible_os_family != "Container Linux by CoreOS" or ansible_os_family != 'Debian' or ansible_os_family != 'Ubuntu'
+
+- name: Create node_exporter service
+  template:
+    src: node_exporter.service
+    dest: /etc/systemd/system/node_exporter.service
+    mode: 0644
+  when: ansible_os_family == "Container Linux by CoreOS" or ansible_os_family == 'Debian' or ansible_os_family == 'Ubuntu'
 
 - name: "Change owner {{ node_exporter_user_home }}"
   file:
@@ -58,7 +66,7 @@
 - name: Add collectors
   lineinfile:
     path: /etc/default/node_exporter
-    line: "NODE_EXPORTER_OPTS={{ node_exporter_collectors }}"
+    line: "NODE_EXPORTER_OPTS={{ node_exporter_opts }}"
     state: present
 
 - name: start service node_exporter, in all cases, also issue daemon-reload to pick up config changes

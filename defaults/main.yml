@@ -9,4 +9,4 @@ download_url: "https://github.com/prometheus/node_exporter/releases/download/v{{
 env: "develop"
 node_exporter_user: "prometheus"
 node_exporter_user_password: "prometheus"
-node_exporter_collectors: "--collector.systemd"
+node_exporter_opts: "--collector.systemd --web.telemetry-path '/node/metrics' "
